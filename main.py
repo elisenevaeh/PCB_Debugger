@@ -1,7 +1,7 @@
 # web debugger backend connected to power supply and multimeter 
 
 from fastapi import FastAPI, WebSocket, HTTPException
-from database import test_collection
+#from database import test_collection
 from pydantic import BaseModel
 from bson import ObjectId
 from typing import List
@@ -109,25 +109,54 @@ def measure_continuity():
 @app.get("/command/")
 async def read_items(q: Union[str, None] = None):
     if q:
-        if(q[:4] == 'SETV'):  # setting voltage on power supply
+        if q[:4] == 'SETV':
             try:
-                vals = re.findall(r'\d', q)[:2] # get first two digits in string
-            except: 
-                return{"error": {"need two integers in command"}}
-            ch = vals[0]
-            vol = vals[1]
-            return set_channel_voltage(ch, vol)
+                # Use a regex to match the command format "SETV <channel>, <voltage>"
+                match = re.match(r"SETV\s*(\d+)\s*,\s*([\d]+(\.\d{1})?)$", q)
+                
+                if match:
+                    # Extract the channel and voltage from the command
+                    channel = int(match.group(1))  # Channel (should be an integer)
+                    voltage = float(match.group(2))  # Voltage (should be a float)
 
+                    # Error check: Ensure the channel is within the expected range
+                    if channel < 1 or channel > 3:
+                        raise HTTPException(status_code=400, detail="Channel must be 1, 2, or 3.")
+                    
+                    # Call the function to set the voltage on the power supply
+                    return set_channel_voltage(channel, voltage)
+                
+                else:
+                    raise HTTPException(status_code=400, detail="Invalid command format. Expected 'SETV <channel>, <voltage>'.")
+
+            except ValueError as e:
+                # This catches if the conversion of channel or voltage fails
+                raise HTTPException(status_code=400, detail="Invalid input values. Channel and voltage must be valid numbers.")
+ 
         elif(q[:4] == 'SETC'):  # setting current on power supply 
             try:
-                vals = re.findall(r'\d', q)[:2] # get first two digits in command string 
-            except:
-                return {"error": {"need two integers in command"}}
-            ch = int(vals[0])
-            if ch > 3 or ch < 1:
-                return {"error": "channel must be 1, 2, or 3"}
-            curr = vals[1]
-            return set_channel_current(ch, curr)
+                # Use a regex to match the command format "SETV <channel>, <voltage>"
+                match = re.match(r"SETC\s*(\d+)\s*,\s*([\d]+(\.\d{1})?)$", q)
+                
+                if match:
+                    # Extract the channel and voltage from the command
+                    channel = int(match.group(1))  # Channel (should be an integer)
+                    current = float(match.group(2))  # Voltage (should be a float)
+
+                    # Error check: Ensure the channel is within the expected range
+                    if channel < 1 or channel > 3:
+                        raise HTTPException(status_code=400, detail="Channel must be 1, 2, or 3.")
+                    
+                    # Call the function to set the voltage on the power supply
+                    return set_channel_current(channel, current)
+                
+                else:
+                    raise HTTPException(status_code=400, detail="Invalid command format. Expected 'SETC <channel>, <current>'.")
+
+            except ValueError as e:
+                # This catches if the conversion of channel or voltage fails
+                raise HTTPException(status_code=400, detail="Invalid input values. Channel and current must be valid numbers.")
+ 
 
         elif(q[:4] == 'GETV'):  # used to read voltage from POWER SUPPLY 
             try:
@@ -173,6 +202,23 @@ async def read_items(q: Union[str, None] = None):
 
             else:
                 print("multimeter not found")
+                
+        elif(q[:4] == 'PRBV'):  # probing voltage - params: min, max, step
+            return {"PROBING VOLTAGE"} 
+        
+        elif(q[:4] == 'PRBC'):  # probing current - params: min, max, step 
+            return {"PROBING CURRENT"} 
 
         else:   # for command not found case 
-            return {"error": "command not found"}
+            return {"error": "command not found"} 
+            
+            
+            '''if(q[:4] == 'SETV'):  # setting voltage on power supply
+            try:
+                vals = re.findall(r'\d', q)[:2] # get first two digits in string
+            except: 
+                return{"error": {"need two integers in command"}}
+            ch = vals[0]
+            vol = vals[1]
+            return set_channel_voltage(ch, vol)
+'''
