@@ -14,6 +14,7 @@ import re
 app = FastAPI()
 
 sleep_timer = 1
+maxVoltage = 3.3
 
 # WebSocket Endpoint for real-time communication
 @app.websocket("/ws/test/{test_id}")
@@ -112,13 +113,14 @@ async def read_items(q: Union[str, None] = None):
         if q[:4] == 'SETV':
             try:
                 # Use a regex to match the command format "SETV <channel>, <voltage>"
-                match = re.match(r"SETV\s*(\d+)\s*,\s*([\d]+(\.\d{1})?)$", q)
+                match = re.match(r"\s*SETV\s*(\d+)\s*,\s*([\d]+(\.\d{1})?)\s*$", q)
                 
                 if match:
                     # Extract the channel and voltage from the command
                     channel = int(match.group(1))  # Channel (should be an integer)
                     voltage = float(match.group(2))  # Voltage (should be a float)
-
+                    if voltage > maxVoltage:
+                        raise HTTPException(status_code=400, detail="Voltage may not exceed max voltage of board.")
                     # Error check: Ensure the channel is within the expected range
                     if channel < 1 or channel > 3:
                         raise HTTPException(status_code=400, detail="Channel must be 1, 2, or 3.")
@@ -213,12 +215,3 @@ async def read_items(q: Union[str, None] = None):
             return {"error": "command not found"} 
             
             
-            '''if(q[:4] == 'SETV'):  # setting voltage on power supply
-            try:
-                vals = re.findall(r'\d', q)[:2] # get first two digits in string
-            except: 
-                return{"error": {"need two integers in command"}}
-            ch = vals[0]
-            vol = vals[1]
-            return set_channel_voltage(ch, vol)
-'''
