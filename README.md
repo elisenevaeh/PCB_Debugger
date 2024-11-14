@@ -7,7 +7,7 @@ SETV int<channel>, float<voltage>
 (Channel must be 1, 2, or 3, and voltage may be up to one decimal place)
 
 Setting Current Level on Power Supply:
-SETC int<channel>, float<current>
+SETC int\<channel\>, float<current>
 (Channel must be 1, 2, or 3, and current may be up to one decimal place)
 
 Getting Voltage Level from Power Supply:
